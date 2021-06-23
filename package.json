@@ -1,0 +1,21 @@
+{
+  "name": "altitude-apparel-reviews-api",
+  "version": "1.0.0",
+  "description": "Api for the reviews route for altitude apparel",
+  "main": "server/index.js",
+  "scripts": {
+    "start:prod": "node server/index.js",
+    "start:dev": "nodemon server/index.js",
+    "test": "test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SDC-JMP/altitude-apparel-reviews-api.git"
+  },
+  "author": "Justin Schreiber",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/SDC-JMP/altitude-apparel-reviews-api/issues"
+  },
+  "homepage": "https://github.com/SDC-JMP/altitude-apparel-reviews-api#readme"
+}
