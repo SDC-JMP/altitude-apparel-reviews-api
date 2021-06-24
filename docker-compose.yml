@@ -1,0 +1,25 @@
+version: "1.0.0"
+services:
+  webapp:
+    build: .
+    depends_on:
+      - postgres
+    environment:
+      DATABASE_URL: postgres://reviews_user:user_review@postgres:5432/db
+      NODE_ENV: development
+      PORT: 3000
+    ports:
+      - "3000:3000"
+    command: npm run start:dev
+    volumes:
+      - .:/app/
+      - /app/node_modules
+
+  postgres:
+    image: postgres:12.7
+    ports:
+      - "5436:5432"
+      environment:
+        POSTGRES_USER: reviews_user
+        POSTGRES_PASSWORD: user_review
+        POSTGRES_DB: localhost

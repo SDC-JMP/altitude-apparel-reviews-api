@@ -17,5 +17,17 @@
   "bugs": {
     "url": "https://github.com/SDC-JMP/altitude-apparel-reviews-api/issues"
   },
-  "homepage": "https://github.com/SDC-JMP/altitude-apparel-reviews-api#readme"
+  "homepage": "https://github.com/SDC-JMP/altitude-apparel-reviews-api#readme",
+  "dependencies": {
+    "body-parser": "^1.19.0",
+    "express": "^4.17.1",
+    "sequelize": "^6.6.2"
+  },
+  "devDependencies": {
+    "eslint": "^7.29.0",
+    "eslint-config-airbnb-base": "^14.2.1",
+    "eslint-plugin-import": "^2.23.4",
+    "jest": "^27.0.5",
+    "supertest": "^6.1.3"
+  }
 }

@@ -1,25 +1,26 @@
 -- -----------------------------------------------------
--- Schema reviews
+-- Drop all tables
 -- -----------------------------------------------------
-DROP DATABASE IF EXISTS reviews_db;
-CREATE DATABASE reviews_db;
-USE reviews_db;
+DROP TABLE IF EXISTS review_characteristic;
+DROP TABLE IF EXISTS characteristic;
+DROP TABLE IF EXISTS photo;
+DROP TABLE IF EXISTS review;
 
 -- -----------------------------------------------------
 -- Table reviews.review
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS review (
-  id INT PRIMARY KEY AUTO_INCREMENT,
+CREATE TABLE review (
+  id BIGSERIAL PRIMARY KEY,
   product_id INT NOT NULL,
   rating INT NOT NULL,
-  date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  date TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   summary VARCHAR(60) NOT NULL,
   body VARCHAR(1000) NOT NULL,
-  recommend TINYINT NOT NULL DEFAULT 0,
-  reported TINYINT NOT NULL DEFAULT 0,
+  recommend BOOLEAN NOT NULL DEFAULT false,
+  reported BOOLEAN NOT NULL DEFAULT false,
   reviewer_name VARCHAR(60) NOT NULL,
   reviewer_email VARCHAR(60) NOT NULL,
-  response VARCHAR(200) NULL,
+  response VARCHAR(1000) NULL,
   helpfulness INT NOT NULL DEFAULT 0
 );
 
@@ -27,21 +28,21 @@ CREATE TABLE IF NOT EXISTS review (
 -- -----------------------------------------------------
 -- Table reviews.photo
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS photo (
-  id INT PRIMARY KEY AUTO_INCREMENT,
-  url VARCHAR(1000) NOT NULL,
+CREATE TABLE photo (
+  id BIGSERIAL PRIMARY KEY,
+  url VARCHAR(2000) NOT NULL,
   review_id INT NOT NULL,
   CONSTRAINT fk_photo_review_id
     FOREIGN KEY (review_id)
-    REFERENCES reviews.review (id)
+    REFERENCES review (id)
 );
 
 
 -- -----------------------------------------------------
 -- Table reviews.product_characteristic
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS characteristic (
-  id INT PRIMARY KEY AUTO_INCREMENT,
+CREATE TABLE characteristic (
+  id BIGSERIAL PRIMARY KEY,
   product_id INT NOT NULL,
   name VARCHAR(7) NOT NULL
 );
@@ -50,15 +51,15 @@ CREATE TABLE IF NOT EXISTS characteristic (
 -- -----------------------------------------------------
 -- Table reviews.review_characteristic
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS review_characteristic (
-  id INT PRIMARY KEY AUTO_INCREMENT,
+CREATE TABLE review_characteristic (
+  id BIGSERIAL PRIMARY KEY,
   review_id INT NOT NULL,
   value INT NOT NULL,
   characteristic_id INT NOT NULL,
   CONSTRAINT fk_review_id
     FOREIGN KEY (review_id)
-    REFERENCES reviews.review (id),
+    REFERENCES review (id),
   CONSTRAINT fk_characteristic_id
     FOREIGN KEY (characteristic_id)
-    REFERENCES reviews.product_characteristic (id)
+    REFERENCES characteristic (id)
 );

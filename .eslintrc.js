@@ -1,29 +1,22 @@
 module.exports = {
-  'env': {
-    'browser': true,
-    'es6': true,
-    'node': true,
+  env: {
+    node: true,
+    commonjs: true,
+    es2021: true
   },
-  'extends': [
-    'plugin:react/recommended',
-    'google',
+  extends: [
+    'airbnb-base'
   ],
-  'globals': {
-    'Atomics': 'readonly',
-    'SharedArrayBuffer': 'readonly',
+  parserOptions: {
+    ecmaVersion: 12
   },
-  'parserOptions': {
-    'ecmaFeatures': {
-      'jsx': true,
-    },
-    'ecmaVersion': 2018,
-    'sourceType': 'module',
-  },
-  'plugins': [
-    'react',
-  ],
-  'ignorePatterns': ['public/bundle.js', 'config.js'],
-  'rules': {
-    'require-jsdoc': 0,
-  },
+  rules: {
+    'comma-dangle': ['error', {
+      arrays: 'never',
+      objects: 'never',
+      imports: 'never',
+      exports: 'never',
+      functions: 'never'
+    }]
+  }
 };

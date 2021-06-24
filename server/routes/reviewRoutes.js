@@ -1,7 +1,9 @@
 const express = require('express');
+
 const router = express.router();
 
-router.get('/', function(req, res) {
+// eslint-disable-next-line no-unused-vars
+router.get('/', (req, res) => {
 
 });
 
