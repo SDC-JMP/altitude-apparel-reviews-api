@@ -1,4 +1,4 @@
-version: "1.0.0"
+version: "3.8"
 services:
   webapp:
     build: .
@@ -12,14 +12,18 @@ services:
       - "3000:3000"
     command: npm run start:dev
     volumes:
-      - .:/app/
+      - ./:/app
       - /app/node_modules
 
   postgres:
     image: postgres:12.7
     ports:
       - "5436:5432"
-      environment:
-        POSTGRES_USER: reviews_user
-        POSTGRES_PASSWORD: user_review
-        POSTGRES_DB: localhost
+    environment:
+      POSTGRES_USER: reviews_user
+      POSTGRES_PASSWORD: user_review
+      POSTGRES_DB: localhost
+    volumes:
+      - postgres:/data/db
+volumes:
+  postgres:
