@@ -5,7 +5,7 @@ const router = require('./routes/reviewRoutes');
 
 const app = express();
 
-app.use(bodyParser.urlEncoded({ extended: true }));
+app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
 app.use('/reviews', router);
