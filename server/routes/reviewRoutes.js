@@ -1,3 +1,4 @@
+/* eslint-disable camelcase */
 const express = require('express');
 const {
   Review,
@@ -30,7 +31,11 @@ router.get('/', (req, res) => {
     },
     limit: count,
     offset: count * (page - 1),
-    order: sorts[req.query.sort || 'relevant']
+    order: sorts[req.query.sort || 'relevant'],
+    include: [{
+      model: Photo,
+      required: true
+    }]
   })
     .then((results) => {
       res.status(200).send(results);
@@ -40,7 +45,7 @@ router.get('/', (req, res) => {
     });
 });
 
-const validateCharacteristicsObj = (charObj) => {
+const isValidCharObj = (charObj) => {
   const keys = Object.keys(charObj);
   for (let i = 0; i < keys.length; i += 1) {
     const num = Number(keys[i]);
@@ -53,7 +58,7 @@ const validateCharacteristicsObj = (charObj) => {
 
 router.post('/', (req, res) => {
   const {
-    product_id: productId,
+    product_id,
     rating,
     summary,
     body,
@@ -64,27 +69,51 @@ router.post('/', (req, res) => {
     characteristics
   } = req.body;
 
-  if (!productId || !rating
-      || rating < 1 || rating > 5
-      || !summary || !body || !recommend
-      || !name || !email || !photos
-      || Array.isArray(photos) || !characteristics
-      || validateCharacteristicsObj(characteristics)) {
+  if (!product_id || !rating
+    || rating < 1 || rating > 5
+    || !summary || !body
+    || !name || !email || !photos
+    || !Array.isArray(photos) || !characteristics
+    || !isValidCharObj(characteristics)) {
     res.sendStatus(422);
     return;
   }
 
-  Review.findAll({
-    where: {
-      product_id: req.query.product_id,
-      reported: false
-    },
-    limit: count,
-    offset: count * (page - 1),
-    order: sorts[req.query.sort || 'relevant']
+  Review.create({
+    product_id,
+    rating,
+    summary,
+    body,
+    recommend,
+    reviewer_name: name,
+    reviewer_email: email
+  }, {
+    omitNull: true
   })
-    .then((results) => {
-      res.status(200).send(results);
+    .then((review) => {
+      const photoPromises = [];
+      for (let i = 0; i < photos.length; i += 1) {
+        photoPromises.push(Photo.create({ url: photos[i], review_id: review.id }));
+      }
+      return { review_id: review.id, result: Promise.all(photoPromises) };
+    })
+    .then(({ review_id }) => {
+      const characteristicPromises = [];
+      const characteristicIds = Object.keys(characteristics);
+
+      for (let i = 0; i < characteristicIds.length; i += 1) {
+        characteristicPromises.push(
+          ReviewCharacteristic.create({
+            characteristic_id: Number(characteristicIds[i]),
+            review_id,
+            value: characteristics[characteristicIds[i]]
+          })
+        );
+      }
+      return Promise.all(characteristicPromises);
+    })
+    .then(() => {
+      res.status(200).send('Created');
     })
     .catch((err) => {
       res.send(err);

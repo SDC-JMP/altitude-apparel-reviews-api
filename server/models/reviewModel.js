@@ -4,6 +4,7 @@ const db = new Sequelize('reviews_db', 'reviews_user', 'user_review', {
   host: 'localhost',
   dialect: 'postgres',
   logging: false,
+  omitNull: true,
   define: {
     timestamps: false,
     freezeTableName: true
@@ -21,6 +22,7 @@ exports.Review = db.define('review', {
   },
   date: {
     type: DataTypes.DATE,
+    defaultValue: Sequelize.fn('now'),
     allowNull: false
   },
   summary: {
@@ -33,10 +35,12 @@ exports.Review = db.define('review', {
   },
   recommend: {
     type: DataTypes.BOOLEAN,
+    defaultValue: false,
     allowNull: false
   },
   reported: {
     type: DataTypes.BOOLEAN,
+    defaultValue: false,
     allowNull: false
   },
   reviewer_name: {
@@ -53,20 +57,20 @@ exports.Review = db.define('review', {
   },
   helpfulness: {
     type: DataTypes.INTEGER,
+    defaultValue: 0,
     allowNull: false
   }
-});
+}, { underscored: true });
 
 exports.Photo = db.define('photo', {
   url: {
     type: DataTypes.STRING(2000),
     allowNull: false
-  },
-  review_id: {
-    type: DataTypes.INTEGER,
-    allowNull: false
   }
-});
+}, { underscored: true });
+
+exports.Review.hasMany(exports.Photo);
+exports.Photo.belongsTo(exports.Review);
 
 exports.Characteristic = db.define('characteristic', {
   product_id: {
@@ -77,19 +81,16 @@ exports.Characteristic = db.define('characteristic', {
     type: DataTypes.STRING(7),
     allowNull: false
   }
-});
+}, { underscored: true });
 
 exports.ReviewCharacteristic = db.define('review_characteristic', {
-  review_id: {
-    type: DataTypes.INTEGER,
-    allowNull: false
-  },
   value: {
     type: DataTypes.INTEGER,
     allowNull: false
-  },
-  characteristic_id: {
-    type: DataTypes.INTEGER,
-    allowNull: false
   }
-});
+}, { underscored: true });
+
+exports.Review.hasMany(exports.ReviewCharacteristic);
+exports.ReviewCharacteristic.belongsTo(exports.Review);
+exports.Characteristic.hasMany(exports.ReviewCharacteristic);
+exports.ReviewCharacteristic.belongsTo(exports.Characteristic);
