@@ -59,18 +59,23 @@ exports.Review = db.define('review', {
     type: DataTypes.INTEGER,
     defaultValue: 0,
     allowNull: false
-  }
-}, { underscored: true });
-
-exports.Photo = db.define('photo', {
-  url: {
-    type: DataTypes.STRING(2000),
+  },
+  photos: {
+    type: DataTypes.ARRAY(DataTypes.TEXT),
+    defaultValue: [],
     allowNull: false
   }
 }, { underscored: true });
 
-exports.Review.hasMany(exports.Photo);
-exports.Photo.belongsTo(exports.Review);
+// exports.Photo = db.define('photo', {
+//   url: {
+//     type: DataTypes.STRING(2000),
+//     allowNull: false
+//   }
+// }, { underscored: true });
+
+// exports.Review.hasMany(exports.Photo);
+// exports.Photo.belongsTo(exports.Review);
 
 exports.Characteristic = db.define('characteristic', {
   product_id: {
