@@ -3,8 +3,8 @@ const express = require('express');
 const { Sequelize } = require('sequelize');
 const {
   Review,
-  Characteristic,
-  ReviewCharacteristic
+  ReviewCharacteristic,
+  db
 } = require('../models/reviewModel');
 
 const router = express.Router();
@@ -86,7 +86,8 @@ router.post('/', (req, res) => {
     characteristics
   } = req.body;
 
-  if (!product_id || !rating
+  if (Number.isNaN(Number(product_id)) || product_id < 1
+    || !rating
     || rating < 1 || rating > 5
     || !summary || !body
     || !name || !email || !photos
@@ -122,6 +123,15 @@ router.post('/', (req, res) => {
     })
     .then(() => {
       res.status(200).send('Created');
+      db.query(`UPDATE characteristic_agg SET value = calc.value
+      FROM (SELECT
+        char.id, AVG(rc.value) AS value
+        FROM characteristic AS char
+        INNER JOIN review_characteristic AS rc
+        ON char.id = rc.characteristic_id
+        WHERE product_id = 18078
+        GROUP BY char.id) AS calc
+      WHERE characteristic_agg.id = calc.id;`);
     })
     .catch((err) => {
       res.send(err);
@@ -162,20 +172,55 @@ router.put('/:reviewId/report', (req, res) => {
     });
 });
 
+// Get meta data about a product usint /meta
 router.get('/meta', (req, res) => {
-  Review.findAll({
-    attributes: ['rating', [Sequelize.fn('COUNT', Sequelize.col('rating')), 'value']],
-    where: {
-      product_id: req.query.product_id
-    },
-    group: 'rating'
-  })
-    .then((results) => {
-      res.status(200).send(results);
-    })
-    .catch((err) => {
-      res.send(err);
-    });
+  const product_id = Number(req.query.product_id);
+  if (!Number.isNaN(product_id) && product_id > 0) {
+    const metaData = { product_id };
+    db.query(`SELECT JSONB_OBJECT_AGG(rating, value) AS ratings FROM
+      (SELECT rating, COUNT(rating) as value FROM review WHERE product_id = ${product_id} GROUP BY rating) AS values;`,
+    { type: Sequelize.QueryTypes.SELECT })
+      .then((ratings) => {
+        // const ratingsInfo = {};
+        // ratings.forEach((rating) => {
+        //   ratingsInfo[rating.rating] = Number(rating.dataValues.value);
+        // });
+        metaData.ratings = ratings[0].ratings;
+
+        return db.query(`SELECT JSONB_OBJECT_AGG(recommend, value) AS recommendations FROM
+          (SELECT recommend, COUNT(recommend) as value FROM review WHERE product_id = ${product_id} GROUP BY recommend)
+          AS values;`,
+        { type: Sequelize.QueryTypes.SELECT });
+      })
+      .then((recommendations) => {
+        // const recommendInfo = {};
+        // recommendations.forEach((recommendation) => {
+        //   recommendInfo[recommendation.recommend] = Number(recommendation.dataValues.value);
+        // });
+        metaData.recommended = recommendations[0].recommendations;
+
+        return db.query(`SELECT JSONB_OBJECT_AGG(name, JSON_BUILD_OBJECT('id', id, 'value', value)) AS characteristics FROM
+        (SELECT name, id, value FROM characteristic_agg WHERE product_id = ${product_id}) AS values;`,
+        { type: Sequelize.QueryTypes.SELECT });
+      })
+      .then((characteristics) => {
+        // const characteristicsInfo = {};
+        // characteristics.forEach((characteristic) => {
+        //   characteristicsInfo[characteristic.name] = {
+        //     id: characteristic.id,
+        //     value: Number(characteristic.dataValues.value)
+        //   };
+        // });
+
+        metaData.characteristics = characteristics[0].characteristics;
+        res.status(200).send(metaData);
+      })
+      .catch((err) => {
+        res.send(err);
+      });
+  } else {
+    res.status(422).send(new Error('Invalid product_id'));
+  }
 });
 
 module.exports = router;
