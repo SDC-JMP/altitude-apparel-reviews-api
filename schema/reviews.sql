@@ -64,3 +64,10 @@ CREATE TABLE review_characteristic (
     FOREIGN KEY (characteristic_id)
     REFERENCES characteristic (id)
 );
+
+-- CREATE TABLE characteristic_agg (
+--   id INTEGER PRIMARY KEY,
+--   name VARCHAR(7) NOT NULL,
+--   value NUMERIC NOT NULL,
+--   product_id INT NOT NULL
+-- );
