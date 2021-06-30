@@ -21,7 +21,8 @@ CREATE TABLE review (
   reviewer_name VARCHAR(60) NOT NULL,
   reviewer_email VARCHAR(60) NOT NULL,
   response VARCHAR(1000) NULL,
-  helpfulness INT NOT NULL DEFAULT 0
+  helpfulness INT NOT NULL DEFAULT 0,
+  photos TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[]
 );
 
 
@@ -63,3 +64,10 @@ CREATE TABLE review_characteristic (
     FOREIGN KEY (characteristic_id)
     REFERENCES characteristic (id)
 );
+
+-- CREATE TABLE characteristic_agg (
+--   id INTEGER PRIMARY KEY,
+--   name VARCHAR(7) NOT NULL,
+--   value NUMERIC NOT NULL,
+--   product_id INT NOT NULL
+-- );

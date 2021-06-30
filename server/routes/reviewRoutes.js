@@ -1,13 +1,15 @@
+/* eslint-disable camelcase */
 const express = require('express');
+const { Sequelize } = require('sequelize');
 const {
   Review,
-  Photo,
-  Characteristic,
-  ReviewCharacteristic
+  ReviewCharacteristic,
+  db
 } = require('../models/reviewModel');
 
 const router = express.Router();
 
+// Get route for /reviews
 router.get('/', (req, res) => {
   const page = req.query.page || 1;
   const count = req.query.count || 5;
@@ -24,6 +26,18 @@ router.get('/', (req, res) => {
   };
 
   Review.findAll({
+    attributes: [
+      ['id', 'review_id'],
+      'rating',
+      'summary',
+      'recommend',
+      'response',
+      'body',
+      'date',
+      'reviewer_name',
+      'helpfulness',
+      'photos'
+    ],
     where: {
       product_id: req.query.product_id,
       reported: false
@@ -33,14 +47,21 @@ router.get('/', (req, res) => {
     order: sorts[req.query.sort || 'relevant']
   })
     .then((results) => {
-      res.status(200).send(results);
+      const formattedResults = {
+        product: Number(req.query.product_id),
+        page: Number(page),
+        count: Number(count),
+        results
+      };
+      res.status(200).send(formattedResults);
     })
     .catch((err) => {
       res.send(err);
     });
 });
 
-const validateCharacteristicsObj = (charObj) => {
+// Used for validating characteristics object
+const isValidCharObj = (charObj) => {
   const keys = Object.keys(charObj);
   for (let i = 0; i < keys.length; i += 1) {
     const num = Number(keys[i]);
@@ -51,9 +72,10 @@ const validateCharacteristicsObj = (charObj) => {
   return true;
 };
 
+// Post route for /reviews
 router.post('/', (req, res) => {
   const {
-    product_id: productId,
+    product_id,
     rating,
     summary,
     body,
@@ -64,31 +86,141 @@ router.post('/', (req, res) => {
     characteristics
   } = req.body;
 
-  if (!productId || !rating
-      || rating < 1 || rating > 5
-      || !summary || !body || !recommend
-      || !name || !email || !photos
-      || Array.isArray(photos) || !characteristics
-      || validateCharacteristicsObj(characteristics)) {
+  if (Number.isNaN(Number(product_id)) || product_id < 1
+    || !rating
+    || rating < 1 || rating > 5
+    || !summary || !body
+    || !name || !email || !photos
+    || !Array.isArray(photos) || !characteristics
+    || !isValidCharObj(characteristics)) {
     res.sendStatus(422);
     return;
   }
 
-  Review.findAll({
-    where: {
-      product_id: req.query.product_id,
-      reported: false
-    },
-    limit: count,
-    offset: count * (page - 1),
-    order: sorts[req.query.sort || 'relevant']
+  Review.create({
+    product_id,
+    rating,
+    summary,
+    body,
+    recommend,
+    reviewer_name: name,
+    reviewer_email: email,
+    photos
   })
-    .then((results) => {
-      res.status(200).send(results);
+    .then((review) => {
+      const characteristicModels = [];
+      const characteristicIds = Object.keys(characteristics);
+
+      for (let i = 0; i < characteristicIds.length; i += 1) {
+        characteristicModels.push({
+          characteristic_id: Number(characteristicIds[i]),
+          review_id: review.id,
+          value: characteristics[characteristicIds[i]]
+        });
+      }
+
+      return ReviewCharacteristic.bulkCreate(characteristicModels);
+    })
+    .then(() => {
+      res.status(200).send('Created');
+      db.query(`UPDATE characteristic_agg SET value = calc.value
+      FROM (SELECT
+        char.id, AVG(rc.value) AS value
+        FROM characteristic AS char
+        INNER JOIN review_characteristic AS rc
+        ON char.id = rc.characteristic_id
+        WHERE product_id = 18078
+        GROUP BY char.id) AS calc
+      WHERE characteristic_agg.id = calc.id;`);
     })
     .catch((err) => {
       res.send(err);
     });
+});
+
+// Put route for helpfulness
+router.put('/:reviewId/helpful', (req, res) => {
+  Review.update({
+    helpfulness: Sequelize.literal('helpfulness + 1')
+  }, {
+    where: {
+      id: req.params.reviewId
+    }
+  })
+    .then(() => {
+      res.sendStatus(200);
+    })
+    .catch((err) => {
+      res.send(err);
+    });
+});
+
+// Put route for reported
+router.put('/:reviewId/report', (req, res) => {
+  Review.update({
+    reported: true
+  }, {
+    where: {
+      id: req.params.reviewId
+    }
+  })
+    .then(() => {
+      res.sendStatus(200);
+    })
+    .catch((err) => {
+      res.send(err);
+    });
+});
+
+// Get meta data about a product usint /meta
+router.get('/meta', (req, res) => {
+  const product_id = Number(req.query.product_id);
+  if (!Number.isNaN(product_id) && product_id > 0) {
+    const metaData = { product_id };
+    db.query(`SELECT JSONB_OBJECT_AGG(rating, value) AS ratings FROM
+      (SELECT rating, COUNT(rating) as value FROM review WHERE product_id = ${product_id} GROUP BY rating) AS values;`,
+    { type: Sequelize.QueryTypes.SELECT })
+      .then((ratings) => {
+        // const ratingsInfo = {};
+        // ratings.forEach((rating) => {
+        //   ratingsInfo[rating.rating] = Number(rating.dataValues.value);
+        // });
+        metaData.ratings = ratings[0].ratings;
+
+        return db.query(`SELECT JSONB_OBJECT_AGG(recommend, value) AS recommendations FROM
+          (SELECT recommend, COUNT(recommend) as value FROM review WHERE product_id = ${product_id} GROUP BY recommend)
+          AS values;`,
+        { type: Sequelize.QueryTypes.SELECT });
+      })
+      .then((recommendations) => {
+        // const recommendInfo = {};
+        // recommendations.forEach((recommendation) => {
+        //   recommendInfo[recommendation.recommend] = Number(recommendation.dataValues.value);
+        // });
+        metaData.recommended = recommendations[0].recommendations;
+
+        return db.query(`SELECT JSONB_OBJECT_AGG(name, JSON_BUILD_OBJECT('id', id, 'value', value)) AS characteristics FROM
+        (SELECT name, id, value FROM characteristic_agg WHERE product_id = ${product_id}) AS values;`,
+        { type: Sequelize.QueryTypes.SELECT });
+      })
+      .then((characteristics) => {
+        // const characteristicsInfo = {};
+        // characteristics.forEach((characteristic) => {
+        //   characteristicsInfo[characteristic.name] = {
+        //     id: characteristic.id,
+        //     value: Number(characteristic.dataValues.value)
+        //   };
+        // });
+
+        metaData.characteristics = characteristics[0].characteristics;
+        res.status(200).send(metaData);
+      })
+      .catch((err) => {
+        res.send(err);
+      });
+  } else {
+    res.status(422).send(new Error('Invalid product_id'));
+  }
 });
 
 module.exports = router;
