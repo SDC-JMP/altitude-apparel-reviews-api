@@ -10,7 +10,7 @@ services:
       PORT: 3000
     ports:
       - "3000:3000"
-    command: npm run start:dev --inspect
+    command: npm run start:dev
     volumes:
       - ./:/app
       - /app/node_modules
@@ -22,7 +22,7 @@ services:
     environment:
       POSTGRES_USER: reviews_user
       POSTGRES_PASSWORD: user_review
-      POSTGRES_DB: localhost
+      POSTGRES_DB: localhost:5436
     volumes:
       - postgres:/data/db
 volumes:

@@ -1,8 +1,6 @@
 const { Sequelize, DataTypes } = require('sequelize');
 
-exports.db = new Sequelize('reviews_db', 'reviews_user', 'user_review', {
-  host: 'localhost',
-  dialect: 'postgres',
+exports.db = new Sequelize(process.env.DATABASE_URL, {
   logging: false,
   omitNull: true,
   define: {

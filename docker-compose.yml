@@ -5,12 +5,12 @@ services:
     depends_on:
       - postgres
     environment:
-      DATABASE_URL: postgres://reviews_user:user_review@postgres:5436/db
+      DATABASE_URL: postgres://reviews_user:user_review@postgres:5436/reviews_db
       NODE_ENV: development
       PORT: 3000
     ports:
       - "3000:3000"
-    command: npm run start:dev --inspect
+    command: npm run start:dev
     volumes:
       - ./:/app
       - /app/node_modules
@@ -23,6 +23,7 @@ services:
       POSTGRES_USER: reviews_user
       POSTGRES_PASSWORD: user_review
       POSTGRES_DB: localhost
+      POSTGRES_PORT: 5436
     volumes:
       - postgres:/data/db
 volumes:
