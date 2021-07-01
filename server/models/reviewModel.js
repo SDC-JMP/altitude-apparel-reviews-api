@@ -1,5 +1,10 @@
 const { Sequelize, DataTypes } = require('sequelize');
 
+if (process.env.NODE_ENV !== 'production' && process.env.NODE_ENV !== 'testing') {
+  // eslint-disable-next-line global-require
+  require('dotenv').config();
+}
+
 exports.db = new Sequelize(process.env.DATABASE_URL, {
   logging: false,
   omitNull: true,
