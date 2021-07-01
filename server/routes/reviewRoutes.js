@@ -129,7 +129,7 @@ router.post('/', (req, res) => {
         FROM characteristic AS char
         INNER JOIN review_characteristic AS rc
         ON char.id = rc.characteristic_id
-        WHERE product_id = 18078
+        WHERE product_id = ${product_id}
         GROUP BY char.id) AS calc
       WHERE characteristic_agg.id = calc.id;`);
     })
@@ -177,42 +177,19 @@ router.get('/meta', (req, res) => {
   const product_id = Number(req.query.product_id);
   if (!Number.isNaN(product_id) && product_id > 0) {
     const metaData = { product_id };
-    db.query(`SELECT JSONB_OBJECT_AGG(rating, value) AS ratings FROM
-      (SELECT rating, COUNT(rating) as value FROM review WHERE product_id = ${product_id} GROUP BY rating) AS values;`,
+
+    db.query(`SELECT JSONB_OBJECT_AGG(countRating.rating, countRating.value) AS ratings,
+      JSONB_OBJECT_AGG(countRecommend.recommend, countRecommend.value) AS recommendations,
+      JSONB_OBJECT_AGG(metaData.name, JSON_BUILD_OBJECT('id', metaData.id, 'value', metaData.value)) AS characteristics FROM
+      (SELECT rating, COUNT(rating) as value FROM review WHERE product_id = ${product_id} GROUP BY rating) AS countRating,
+      (SELECT recommend, COUNT(recommend) as value FROM review WHERE product_id = ${product_id} GROUP BY recommend) AS countRecommend,
+      (SELECT name, id, value FROM characteristic_agg WHERE product_id = ${product_id}) AS metaData;`,
     { type: Sequelize.QueryTypes.SELECT })
-      .then((ratings) => {
-        // const ratingsInfo = {};
-        // ratings.forEach((rating) => {
-        //   ratingsInfo[rating.rating] = Number(rating.dataValues.value);
-        // });
-        metaData.ratings = ratings[0].ratings;
+      .then((results) => {
+        metaData.ratings = results[0].ratings;
+        metaData.recommended = results[0].recommendations;
+        metaData.characteristics = results[0].characteristics;
 
-        return db.query(`SELECT JSONB_OBJECT_AGG(recommend, value) AS recommendations FROM
-          (SELECT recommend, COUNT(recommend) as value FROM review WHERE product_id = ${product_id} GROUP BY recommend)
-          AS values;`,
-        { type: Sequelize.QueryTypes.SELECT });
-      })
-      .then((recommendations) => {
-        // const recommendInfo = {};
-        // recommendations.forEach((recommendation) => {
-        //   recommendInfo[recommendation.recommend] = Number(recommendation.dataValues.value);
-        // });
-        metaData.recommended = recommendations[0].recommendations;
-
-        return db.query(`SELECT JSONB_OBJECT_AGG(name, JSON_BUILD_OBJECT('id', id, 'value', value)) AS characteristics FROM
-        (SELECT name, id, value FROM characteristic_agg WHERE product_id = ${product_id}) AS values;`,
-        { type: Sequelize.QueryTypes.SELECT });
-      })
-      .then((characteristics) => {
-        // const characteristicsInfo = {};
-        // characteristics.forEach((characteristic) => {
-        //   characteristicsInfo[characteristic.name] = {
-        //     id: characteristic.id,
-        //     value: Number(characteristic.dataValues.value)
-        //   };
-        // });
-
-        metaData.characteristics = characteristics[0].characteristics;
         res.status(200).send(metaData);
       })
       .catch((err) => {
