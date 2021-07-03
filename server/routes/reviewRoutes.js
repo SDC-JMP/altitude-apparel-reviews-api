@@ -122,7 +122,7 @@ router.post('/', (req, res) => {
       return ReviewCharacteristic.bulkCreate(characteristicModels);
     })
     .then(() => {
-      res.status(200).send('Created');
+      res.status(201).send('Created');
       db.query(`UPDATE characteristic_agg SET value = calc.value
       FROM (SELECT
         char.id, AVG(rc.value) AS value
@@ -148,7 +148,7 @@ router.put('/:reviewId/helpful', (req, res) => {
     }
   })
     .then(() => {
-      res.sendStatus(200);
+      res.sendStatus(204);
     })
     .catch((err) => {
       res.send(err);
@@ -165,7 +165,7 @@ router.put('/:reviewId/report', (req, res) => {
     }
   })
     .then(() => {
-      res.sendStatus(200);
+      res.sendStatus(204);
     })
     .catch((err) => {
       res.send(err);
