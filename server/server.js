@@ -10,4 +10,8 @@ app.use(bodyParser.json());
 
 app.use('/reviews', router);
 
+app.get('/', (req, res) => {
+  res.sendStatus(200);
+});
+
 module.exports = app;
